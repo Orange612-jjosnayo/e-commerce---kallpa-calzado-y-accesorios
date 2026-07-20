@@ -1,0 +1,58 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: kallpa-db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-j73987927j}
+      MYSQL_DATABASE: ${DB_NAME:-kallpa_db}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - internal-network
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: kallpa-backend
+    restart: always
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=${DB_PASSWORD:-j73987927j}
+      - DB_NAME=${DB_NAME:-kallpa_db}
+      - VIRTUAL_HOST=api.staging.e-commerce---kallpa-calzado-y-accesorios.${VPS_HOST}.nip.io
+      - VIRTUAL_PORT=8000
+    depends_on:
+      - db
+    networks:
+      - internal-network
+      - proxy-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: kallpa-frontend
+    restart: always
+    depends_on:
+      - backend
+    networks:
+      - proxy-network
+    environment:
+      - VIRTUAL_HOST=staging.e-commerce---kallpa-calzado-y-accesorios.${VPS_HOST}.nip.io
+      - VIRTUAL_PORT=3000
+
+volumes:
+  db_data:
+
+networks:
+  internal-network:
+    driver: bridge
+  proxy-network:
+    external: true
+    name: proxy-network
