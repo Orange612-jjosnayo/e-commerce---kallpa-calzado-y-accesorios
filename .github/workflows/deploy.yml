@@ -53,8 +53,6 @@ jobs:
           tags: |
             ghcr.io/${{ env.OWNER_LC }}/kallpa-frontend:latest
             ghcr.io/${{ env.OWNER_LC }}/kallpa-frontend:${{ github.sha }}
-          build-args: |
-            NEXT_PUBLIC_API_URL=http://api.staging.e-commerce---kallpa-calzado-y-accesorios.${{ secrets.VPS_HOST }}.nip.io
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
