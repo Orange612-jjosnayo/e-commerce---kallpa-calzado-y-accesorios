@@ -111,7 +111,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           source: "docker-compose.yml"
-          target: "/app/e-commerce---kallpa-calzado-y-accesorios"
+          target: "~/app/e-commerce---kallpa-calzado-y-accesorios"
 
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -121,7 +121,7 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
           script: |
-            cd /app/e-commerce---kallpa-calzado-y-accesorios
+            cd ~/app/e-commerce---kallpa-calzado-y-accesorios
             
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
@@ -133,4 +133,4 @@ jobs:
             
             # Levantamos la pila
             docker compose pull
-            docker compose up -d --remove-orphans
+            docker compose up -d
