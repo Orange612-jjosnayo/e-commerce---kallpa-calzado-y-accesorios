@@ -20,19 +20,18 @@ services:
     container_name: kallpa-backend
     restart: always
     environment:
-      DB_HOST: db
-      DB_PORT: 3306
-      DB_USER: root
-      DB_PASSWORD: ${DB_PASSWORD:-j73987927j}
-      DB_NAME: ${DB_NAME:-kallpa_db}
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=${DB_PASSWORD:-j73987927j}
+      - DB_NAME=${DB_NAME:-kallpa_db}
+      - VIRTUAL_HOST=api.staging.e-commerce---kallpa-calzado-y-accesorios.${VPS_HOST}.nip.io
+      - VIRTUAL_PORT=8000
     depends_on:
       - db
     networks:
       - internal-network
       - proxy-network
-    environment:
-      - VIRTUAL_HOST=api.staging.e-commerce---kallpa-calzado-y-accesorios.${VPS_HOST}.nip.io
-      - VIRTUAL_PORT=8000
 
   frontend:
     build:
