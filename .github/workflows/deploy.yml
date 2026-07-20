@@ -132,5 +132,5 @@ jobs:
             echo "VPS_HOST=${{ secrets.VPS_HOST }}" > .env
             
             # Levantamos la pila
-            docker compose pull
-            docker compose up -d
+            docker-compose pull
+            docker-compose up -d
