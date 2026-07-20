@@ -71,8 +71,6 @@ jobs:
 
       - name: Prepare docker-compose.yml for production
         run: |
-          # Reemplazar las directivas de build por las imágenes de GHCR en el docker-compose.yml
-          sed -i "s|build:|image: ghcr.io/${{ env.OWNER_LC }}/kallpa-backend:latest|g" docker-compose.yml
           # Limpiar las líneas de build específicas del backend y frontend para usar las imágenes pre-construidas
           # Usamos un script de python simple para reescribir el docker-compose de forma limpia y robusta
           python3 -c "
