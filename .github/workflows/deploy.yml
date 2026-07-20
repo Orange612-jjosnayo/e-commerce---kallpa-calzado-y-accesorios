@@ -1,0 +1,136 @@
+name: Deploy Kallpa Calzado y Accesorios
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Downcase repository owner
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: '${{ github.repository_owner }}'
+
+      - name: Build and push Backend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/kallpa-backend:latest
+            ghcr.io/${{ env.OWNER_LC }}/kallpa-backend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push Frontend image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER_LC }}/kallpa-frontend:latest
+            ghcr.io/${{ env.OWNER_LC }}/kallpa-frontend:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Downcase repository owner
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >> ${GITHUB_ENV}
+        env:
+          OWNER: '${{ github.repository_owner }}'
+
+      - name: Prepare docker-compose.yml for production
+        run: |
+          # Reemplazar las directivas de build por las imágenes de GHCR en el docker-compose.yml
+          sed -i "s|build:|image: ghcr.io/${{ env.OWNER_LC }}/kallpa-backend:latest|g" docker-compose.yml
+          # Limpiar las líneas de build específicas del backend y frontend para usar las imágenes pre-construidas
+          # Usamos un script de python simple para reescribir el docker-compose de forma limpia y robusta
+          python3 -c "
+          with open('docker-compose.yml', 'r') as f:
+              lines = f.readlines()
+          
+          out = []
+          skip = False
+          for line in lines:
+              if 'build:' in line:
+                  if 'context: ./backend' in lines[lines.index(line)+1] or 'context: ./backend' in lines[lines.index(line)+2]:
+                      out.append('    image: ghcr.io/${{ env.OWNER_LC }}/kallpa-backend:latest\n')
+                      skip = True
+                      continue
+                  elif 'context: ./frontend' in lines[lines.index(line)+1] or 'context: ./frontend' in lines[lines.index(line)+2]:
+                      out.append('    image: ghcr.io/${{ env.OWNER_LC }}/kallpa-frontend:latest\n')
+                      skip = True
+                      continue
+              if skip:
+                  if 'context:' in line or 'dockerfile:' in line:
+                      continue
+                  else:
+                      skip = False
+              out.append(line)
+          
+          with open('docker-compose.yml', 'w') as f:
+              f.writelines(out)
+          "
+          cat docker-compose.yml
+
+      - name: Copy docker-compose.yml to VPS via SSH/SCP
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          source: "docker-compose.yml"
+          target: "/app/e-commerce---kallpa-calzado-y-accesorios"
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            cd /app/e-commerce---kallpa-calzado-y-accesorios
+            
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Creamos la red externa si no existe
+            docker network create proxy-network || true
+            
+            # Guardamos las variables de entorno necesarias
+            echo "VPS_HOST=${{ secrets.VPS_HOST }}" > .env
+            
+            # Levantamos la pila
+            docker compose pull
+            docker compose up -d --remove-orphans
