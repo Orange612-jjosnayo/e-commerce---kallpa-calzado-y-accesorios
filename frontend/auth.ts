@@ -12,7 +12,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         try {
           // Llamamos directamente a nuestra API en FastAPI
-          const response = await fetch("http://127.0.0.1:8000/api/users/login", {
+          const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+          const response = await fetch(`${API_URL}/api/users/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
