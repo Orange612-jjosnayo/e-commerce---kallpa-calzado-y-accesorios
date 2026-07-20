@@ -79,13 +79,13 @@ jobs:
           
           out = []
           skip = False
-          for line in lines:
+          for i, line in enumerate(lines):
               if 'build:' in line:
-                  if 'context: ./backend' in lines[lines.index(line)+1] or 'context: ./backend' in lines[lines.index(line)+2]:
+                  if 'context: ./backend' in lines[i+1] or 'context: ./backend' in lines[i+2]:
                       out.append('    image: ghcr.io/${{ env.OWNER_LC }}/kallpa-backend:latest\n')
                       skip = True
                       continue
-                  elif 'context: ./frontend' in lines[lines.index(line)+1] or 'context: ./frontend' in lines[lines.index(line)+2]:
+                  elif 'context: ./frontend' in lines[i+1] or 'context: ./frontend' in lines[i+2]:
                       out.append('    image: ghcr.io/${{ env.OWNER_LC }}/kallpa-frontend:latest\n')
                       skip = True
                       continue
