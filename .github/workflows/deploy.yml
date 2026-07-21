@@ -138,3 +138,6 @@ jobs:
             # Levantamos la pila
             docker-compose pull
             docker-compose up -d
+            
+            # Limpieza automática de imágenes antiguas (dangling) para evitar disco lleno
+            docker image prune -f
