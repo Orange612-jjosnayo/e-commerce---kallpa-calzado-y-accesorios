@@ -105,37 +105,27 @@ jobs:
           with open('docker-compose.yml', 'w') as f:
               f.writelines(out)
           "
-          cat docker-compose.yml
-
-      - name: Create target directory on VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          script: |
-            mkdir -p ~/app/e-commerce---kallpa-calzado-y-accesorios
-
-      - name: Copy docker-compose.yml to VPS via SSH/SCP
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USERNAME }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
-          source: "docker-compose.yml"
-          target: "/home/${{ secrets.VPS_USERNAME }}/app/e-commerce---kallpa-calzado-y-accesorios"
+          # Save compose content to environment
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "COMPOSE_CONTENT<<$EOF" >> $GITHUB_ENV
+          cat docker-compose.yml >> $GITHUB_ENV
+          echo "$EOF" >> $GITHUB_ENV
 
       - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
+        env:
+          COMPOSE_CONTENT: ${{ env.COMPOSE_CONTENT }}
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           port: 22
+          envs: COMPOSE_CONTENT
           script: |
+            mkdir -p ~/app/e-commerce---kallpa-calzado-y-accesorios
             cd ~/app/e-commerce---kallpa-calzado-y-accesorios
+            
+            echo "$COMPOSE_CONTENT" > docker-compose.yml
             
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
             
