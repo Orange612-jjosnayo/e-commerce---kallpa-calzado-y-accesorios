@@ -46,6 +46,8 @@ services:
     environment:
       - VIRTUAL_HOST=staging.e-commerce---kallpa-calzado-y-accesorios.${VPS_HOST}.nip.io
       - VIRTUAL_PORT=3000
+      - AUTH_TRUST_HOST=true
+      - AUTH_SECRET=${AUTH_SECRET:-un_string_super_largo_y_secreto_para_kallpa_calzado_2026}
 
 volumes:
   db_data:
@@ -56,3 +58,4 @@ networks:
   proxy-network:
     external: true
     name: proxy-network
+
