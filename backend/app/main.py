@@ -12,7 +12,9 @@ app = FastAPI(title="Kallpa Calzado API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
+    # Permitimos los orígenes locales y usamos un regex para permitir el dominio dinámico de nip.io en staging
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origin_regex=r"https?://.*\.nip\.io",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
